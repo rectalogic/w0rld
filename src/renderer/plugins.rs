@@ -3,10 +3,10 @@
 
 mod app;
 mod offscreen;
+mod scene;
 
 pub use app::AppPlugin;
+pub use scene::ScenePlugin;
 
 const CAMERA_NAME: &str = "Camera";
-const VIDEO1_NAME: &str = "Video1";
-const VIDEO2_NAME: &str = "Video2";
-const VIDEO3_NAME: &str = "Video3";
+const VIDEO_NAME_PREFIX: &str = "Video";

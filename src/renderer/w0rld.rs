@@ -21,12 +21,14 @@ impl<const S: usize> W0rld<S> {
         let (tx, rx) = channel();
         let now = Instant::now();
         let mut app = App::new();
-        app.add_plugins(plugins::AppPlugin {
-            gltf_path,
-            width,
-            height,
-            tx,
-        })
+        app.add_plugins((
+            plugins::AppPlugin { tx },
+            plugins::ScenePlugin {
+                gltf_path,
+                width,
+                height,
+            },
+        ))
         .insert_resource(TimeUpdateStrategy::ManualInstant(now));
 
         app.finish();

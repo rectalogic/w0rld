@@ -1,0 +1,19 @@
+[package]
+name = "w0rld_mixer2"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+readme.workspace = true
+description.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+w0rld = { path = "../" }
+
+[lints]
+workspace = true

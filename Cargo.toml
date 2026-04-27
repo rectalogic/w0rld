@@ -1,0 +1,51 @@
+[workspace]
+members = [
+    "xtask",
+    "w0rld_source",
+    "w0rld_filter",
+    "w0rld_mixer2",
+    "w0rld_mixer3",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/rectalogic/w0rld"
+description = "frei0r plugins that render a 3D Bevy scene"
+readme = "README.md"
+keywords = ["frei0r", "video", "gltf", "3d", "bevy"]
+categories = ["multimedia", "multimedia::video"]
+
+[package]
+name = "w0rld"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[lib]
+crate-type = ["rlib"]
+
+[workspace.dependencies]
+anyhow = "1.0.102"
+
+[dependencies]
+bevy = { git = "https://github.com/bevyengine/bevy.git", rev = "6090daa" }
+frei0r-rs2 = { git = "https://github.com/rectalogic/frei0r-rs.git", tag = "2.4.0" }
+
+[profile.release]
+lto = true
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+style = { level = "warn", priority = -1 }
+cargo = { level = "warn", priority = -1 }
+cast_possible_truncation = "allow"
+multiple_crate_versions = "allow"
+missing_panics_doc = "allow"
+must_use_candidate = "allow"

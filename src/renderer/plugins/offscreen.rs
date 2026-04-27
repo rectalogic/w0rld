@@ -3,6 +3,7 @@
 
 use std::sync::mpsc::Sender;
 
+use super::{PIXEL_SIZE, TEXTURE_FORMAT};
 use bevy::{
     camera::RenderTarget,
     prelude::*,
@@ -13,14 +14,11 @@ use bevy::{
         render_asset::RenderAssets,
         render_resource::{
             Buffer, BufferDescriptor, BufferUsages, CommandEncoderDescriptor, Extent3d, MapMode,
-            PollType, TexelCopyBufferInfo, TexelCopyBufferLayout, TextureFormat, TextureUsages,
+            PollType, TexelCopyBufferInfo, TexelCopyBufferLayout, TextureUsages,
         },
         renderer::{RenderContext, RenderDevice, RenderGraph, RenderQueue},
     },
 };
-
-const TEXTURE_FORMAT: TextureFormat = TextureFormat::Rgba8UnormSrgb;
-const PIXEL_SIZE: usize = 4;
 
 pub struct OffscreenPlugin {
     pub tx: Sender<Result<Vec<u8>>>,

@@ -7,12 +7,18 @@ use std::{
 };
 
 use super::plugins;
-use bevy::{platform::time::Instant, prelude::*, time::TimeUpdateStrategy};
+use bevy::{
+    asset::RenderAssetUsages,
+    platform::time::Instant,
+    prelude::*,
+    render::render_resource::{Extent3d, TextureDimension},
+    time::TimeUpdateStrategy,
+};
 
 pub struct W0rld<const S: usize> {
     app: App,
-    video_images: [Option<Handle<Image>>; S],
     time: Instant,
+    last_time: Option<f64>,
     rx: Receiver<Result<Vec<u8>>>,
 }
 
@@ -23,7 +29,7 @@ impl<const S: usize> W0rld<S> {
         let mut app = App::new();
         app.add_plugins((
             plugins::AppPlugin { tx },
-            plugins::ScenePlugin {
+            plugins::ScenePlugin::<S> {
                 gltf_path,
                 width,
                 height,
@@ -33,6 +39,31 @@ impl<const S: usize> W0rld<S> {
 
         app.finish();
         app.cleanup();
+
+        let mut images = app
+            .world_mut()
+            .get_resource_mut::<Assets<Image>>()
+            .ok_or("Image assets not found")?;
+
+        let video_images: [Handle<Image>; S] = (0..S)
+            .map(|_| {
+                images.add(Image::new_fill(
+                    Extent3d {
+                        width,
+                        height,
+                        ..default()
+                    },
+                    TextureDimension::D2,
+                    &[0, 0, 0, 255],
+                    plugins::TEXTURE_FORMAT,
+                    RenderAssetUsages::default(),
+                ))
+            })
+            .collect::<Vec<Handle<Image>>>()
+            .try_into()
+            .unwrap();
+
+        app.insert_resource(plugins::VideoImages::<S>(video_images));
 
         // Preroll 2 frames to let pipelines load etc.
         // https://github.com/bevyengine/bevy/issues/20756
@@ -45,15 +76,33 @@ impl<const S: usize> W0rld<S> {
             app,
             rx,
             time: now,
-            video_images: [const { None }; S],
+            last_time: None,
         })
     }
 
     pub fn render(&mut self, time: f64, inframes: [&[u8]; S]) -> Result<Vec<u8>> {
-        self.time += Duration::from_secs(time as u64);
+        let dt = if let Some(last_time) = self.last_time.replace(time) {
+            time - last_time
+        } else {
+            0.0
+        };
+        self.time += Duration::from_secs(dt as u64);
         self.app
             .insert_resource(TimeUpdateStrategy::ManualInstant(self.time));
-        //XXX push frames to video_images
+
+        let video_images = self
+            .app
+            .world()
+            .resource::<plugins::VideoImages<S>>()
+            .0
+            .clone();
+        let mut images = self.app.world_mut().resource_mut::<Assets<Image>>();
+        for (image_handle, inframe) in video_images.iter().zip(inframes) {
+            if let Some(mut image) = images.get_mut(image_handle) {
+                image.data.as_mut().unwrap().copy_from_slice(inframe);
+            }
+        }
+
         self.app.update();
         self.rx.recv()?
     }

@@ -1,23 +1,23 @@
 // Copyright (C) 2026 Andrew Wason
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-use super::{CAMERA_NAME, offscreen::OffscreenSurface};
+use super::{CAMERA_NAME, VideoImages, offscreen::OffscreenSurface};
 use bevy::{prelude::*, tasks::block_on};
 
-pub struct ScenePlugin {
+pub struct ScenePlugin<const S: usize> {
     pub gltf_path: String,
     pub width: u32,
     pub height: u32,
 }
 
-impl Plugin for ScenePlugin {
+impl<const S: usize> Plugin for ScenePlugin<S> {
     fn build(&self, app: &mut App) {
         app.insert_resource(Scene {
             gltf_path: self.gltf_path.clone(),
             width: self.width,
             height: self.height,
         })
-        .add_systems(Startup, load_scene.before(configure_scene));
+        .add_systems(Startup, load_scene.before(configure_scene::<S>));
     }
 }
 
@@ -42,10 +42,11 @@ fn load_scene(
     Ok(())
 }
 
-fn configure_scene(
+fn configure_scene<const S: usize>(
     mut commands: Commands,
     scene: Res<Scene>,
     cameras: Query<(Entity, &Name), With<Camera>>,
+    video_images: Res<VideoImages<S>>,
 ) -> Result<()> {
     let name = Name::new(CAMERA_NAME);
     if let Some(camera_entity) = cameras
@@ -55,8 +56,11 @@ fn configure_scene(
         commands
             .entity(camera_entity)
             .insert(OffscreenSurface::new(scene.width, scene.height));
-        Ok(())
     } else {
-        Err("Camera not found".into())
+        return Err("Camera not found".into());
     }
+
+    //XXX find Material on entity with Name Video1 etc. and associate image handle
+
+    Ok(())
 }

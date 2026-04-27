@@ -23,7 +23,7 @@ const TEXTURE_FORMAT: TextureFormat = TextureFormat::Rgba8UnormSrgb;
 const PIXEL_SIZE: usize = 4;
 
 pub struct OffscreenPlugin {
-    pub tx: Sender<Vec<u8>>,
+    pub tx: Sender<Result<Vec<u8>>>,
 }
 
 impl Plugin for OffscreenPlugin {
@@ -45,7 +45,7 @@ impl Plugin for OffscreenPlugin {
 }
 
 #[derive(Resource, Clone, ExtractResource)]
-struct RenderSender(Sender<Vec<u8>>);
+struct RenderSender(Sender<Result<Vec<u8>>>);
 
 #[derive(Component)]
 #[require(Camera3d)]
@@ -164,16 +164,14 @@ fn copy_from_offscreen_buffer(
         result.expect("Failed to map buffer");
         let image_data = buffer.slice(..).get_mapped_range();
         if let Err(e) = if bytes_per_row == padded_bytes_per_row {
-            tx.send(image_data.to_vec())
+            tx.send(Ok(image_data.to_vec()))
         } else {
-            tx.send(
-                image_data
-                    .chunks(padded_bytes_per_row)
-                    .take(height as usize)
-                    .flat_map(|row| &row[..bytes_per_row.min(row.len())])
-                    .cloned()
-                    .collect(),
-            )
+            tx.send(Ok(image_data
+                .chunks(padded_bytes_per_row)
+                .take(height as usize)
+                .flat_map(|row| &row[..bytes_per_row.min(row.len())])
+                .cloned()
+                .collect()))
         } {
             warn!("Failed to send readback result: {}", e);
         }

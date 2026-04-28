@@ -8,6 +8,7 @@ use std::{
 
 use super::plugins;
 use bevy::{
+    app::PluginsState,
     asset::RenderAssetUsages,
     platform::time::Instant,
     prelude::*,
@@ -37,6 +38,9 @@ impl<const S: usize> W0rld<S> {
         ))
         .insert_resource(TimeUpdateStrategy::ManualInstant(now));
 
+        while app.plugins_state() == PluginsState::Adding {
+            bevy::tasks::tick_global_task_pools_on_main_thread();
+        }
         app.finish();
         app.cleanup();
 

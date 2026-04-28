@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 use super::{CAMERA_NAME, VIDEO_NAME_PREFIX, VideoImages, offscreen::OffscreenSurface};
-use bevy::{prelude::*, tasks::block_on};
+use bevy::{prelude::*, world_serialization::WorldInstanceReady};
 
 pub struct ScenePlugin<const S: usize> {
-    pub gltf_path: String,
+    pub scene_path: String,
     pub width: u32,
     pub height: u32,
 }
@@ -13,19 +13,28 @@ pub struct ScenePlugin<const S: usize> {
 impl<const S: usize> Plugin for ScenePlugin<S> {
     fn build(&self, app: &mut App) {
         app.insert_resource(Scene {
-            gltf_path: self.gltf_path.clone(),
+            path: self.scene_path.clone(),
             width: self.width,
             height: self.height,
+            ready: false,
         })
-        .add_systems(Startup, load_scene.before(configure_scene::<S>));
+        .add_systems(Startup, load_scene)
+        .add_observer(configure_scene::<S>);
     }
 }
 
 #[derive(Resource)]
-struct Scene {
-    gltf_path: String,
+pub struct Scene {
+    path: String,
     width: u32,
     height: u32,
+    ready: bool,
+}
+
+impl Scene {
+    pub fn ready(&self) -> bool {
+        self.ready
+    }
 }
 
 fn load_scene(
@@ -35,15 +44,15 @@ fn load_scene(
 ) -> Result<()> {
     let gltf_handle: Handle<WorldAsset> = asset_server
         .load_builder()
-        .load(GltfAssetLabel::Scene(0).from_asset(scene.gltf_path.clone()));
-    block_on(asset_server.wait_for_asset(&gltf_handle))?;
+        .load(GltfAssetLabel::Scene(0).from_asset(scene.path.clone()));
     commands.spawn(WorldAssetRoot(gltf_handle));
     Ok(())
 }
 
 fn configure_scene<const S: usize>(
+    _scene_ready: On<WorldInstanceReady>,
     mut commands: Commands,
-    scene: Res<Scene>,
+    mut scene: ResMut<Scene>,
     cameras: Query<(Entity, &Name), With<Camera>>,
     video_materials: Query<(&Name, &MeshMaterial3d<StandardMaterial>)>,
     mut materials: ResMut<Assets<StandardMaterial>>,
@@ -74,5 +83,6 @@ fn configure_scene<const S: usize>(
         }
     });
 
+    scene.ready = true;
     Ok(())
 }

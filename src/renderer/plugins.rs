@@ -7,7 +7,7 @@ mod scene;
 
 pub use app::AppPlugin;
 use bevy::{prelude::*, render::render_resource::TextureFormat};
-pub use scene::ScenePlugin;
+pub use scene::{Scene, ScenePlugin};
 
 const CAMERA_NAME: &str = "Camera";
 const VIDEO_NAME_PREFIX: &str = "Video";

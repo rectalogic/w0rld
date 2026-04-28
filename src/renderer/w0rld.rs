@@ -24,14 +24,14 @@ pub struct W0rld<const S: usize> {
 }
 
 impl<const S: usize> W0rld<S> {
-    pub fn new(gltf_path: String, width: u32, height: u32) -> Result<Self> {
+    pub fn new(scene_path: String, width: u32, height: u32) -> Result<Self> {
         let (tx, rx) = channel();
         let now = Instant::now();
         let mut app = App::new();
         app.add_plugins((
             plugins::AppPlugin { tx },
             plugins::ScenePlugin::<S> {
-                gltf_path,
+                scene_path,
                 width,
                 height,
             },
@@ -69,12 +69,15 @@ impl<const S: usize> W0rld<S> {
 
         app.insert_resource(plugins::VideoImages::<S>(video_images));
 
-        // Preroll 2 frames to let pipelines load etc.
+        // Preroll frames while we wait for asset to load, also to let render pipelines load etc.
         // https://github.com/bevyengine/bevy/issues/20756
-        app.update();
-        rx.recv()??;
-        app.update();
-        rx.recv()??;
+        while !app.world().resource::<plugins::Scene>().ready() {
+            app.update();
+            if let Ok(result) = rx.try_recv() {
+                result?;
+            }
+            bevy::platform::thread::sleep(Duration::from_millis(40));
+        }
 
         Ok(Self {
             app,

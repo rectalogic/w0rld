@@ -31,7 +31,7 @@ impl Plugin for OffscreenPlugin {
             ExtractResourcePlugin::<RenderSender>::default(),
         ))
         .insert_resource(RenderSender(self.tx.clone()))
-        .add_systems(PostStartup, setup_offscreen_texture);
+        .add_observer(setup_offscreen_texture);
 
         app.sub_app_mut(RenderApp)
             .add_systems(
@@ -88,6 +88,7 @@ impl OffscreenTexture {
 }
 
 fn setup_offscreen_texture(
+    _add: On<Add, OffscreenSurface>,
     mut commands: Commands,
     offscreen_surface: Single<(Entity, &OffscreenSurface)>,
     mut images: ResMut<Assets<Image>>,

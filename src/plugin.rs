@@ -40,21 +40,23 @@ where
         let processor = match self.processor {
             Some(Ok(ref mut processor)) => processor,
             Some(Err(())) => return,
-            None => match self.gltf_path.to_str() {
-                Ok(gltf_path) => {
+            None => {
+                if let Ok(gltf_path) = self.gltf_path.to_str()
+                    && let Ok(gltf_path) = std::path::absolute(gltf_path)
+                    && let Some(gltf_path) = gltf_path.to_str()
+                {
                     self.processor = Some(Ok(RenderProcessor::<S>::new(
                         gltf_path.into(),
                         self.width,
                         self.height,
                     )));
                     self.processor.as_mut().unwrap().as_mut().unwrap()
-                }
-                Err(_) => {
+                } else {
                     log::error!("w0rld: invalid gltf_path `{:?}'", self.gltf_path);
                     self.processor = Some(Err(()));
                     return;
                 }
-            },
+            }
         };
 
         if let Err(e) = processor.render(time, inframes, outframe) {

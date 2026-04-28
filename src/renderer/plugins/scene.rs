@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Andrew Wason
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-use super::{CAMERA_NAME, VideoImages, offscreen::OffscreenSurface};
+use super::{CAMERA_NAME, VIDEO_NAME_PREFIX, VideoImages, offscreen::OffscreenSurface};
 use bevy::{prelude::*, tasks::block_on};
 
 pub struct ScenePlugin<const S: usize> {
@@ -35,7 +35,6 @@ fn load_scene(
 ) -> Result<()> {
     let gltf_handle: Handle<WorldAsset> = asset_server
         .load_builder()
-        .override_unapproved()
         .load(GltfAssetLabel::Scene(0).from_asset(scene.gltf_path.clone()));
     block_on(asset_server.wait_for_asset(&gltf_handle))?;
     commands.spawn(WorldAssetRoot(gltf_handle));
@@ -46,6 +45,8 @@ fn configure_scene<const S: usize>(
     mut commands: Commands,
     scene: Res<Scene>,
     cameras: Query<(Entity, &Name), With<Camera>>,
+    video_materials: Query<(&Name, &MeshMaterial3d<StandardMaterial>)>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
     video_images: Res<VideoImages<S>>,
 ) -> Result<()> {
     let name = Name::new(CAMERA_NAME);
@@ -57,10 +58,21 @@ fn configure_scene<const S: usize>(
             .entity(camera_entity)
             .insert(OffscreenSurface::new(scene.width, scene.height));
     } else {
-        return Err("Camera not found".into());
+        return Err("Camera node not found".into());
     }
 
-    //XXX find Material on entity with Name Video1 etc. and associate image handle
+    (0..S).for_each(|i| {
+        let name = Name::new(format!("{VIDEO_NAME_PREFIX}{}", i + 1));
+        if let Some(video_material) = video_materials
+            .iter()
+            .find_map(|(n, m)| if *n == name { Some(m) } else { None })
+            && let Some(mut material) = materials.get_mut(&video_material.0)
+        {
+            material.base_color_texture = Some(video_images.0[i].clone())
+        } else {
+            warn!("Missing video node {}", name.as_str());
+        }
+    });
 
     Ok(())
 }

@@ -35,7 +35,7 @@ crate-type = ["rlib"]
 anyhow = "1.0.102"
 
 [dependencies]
-bevy = { git = "https://github.com/bevyengine/bevy.git", rev = "6090daa" }
+bevy = { git = "https://github.com/bevyengine/bevy.git", rev = "edf38ba", features = ["jpeg"] }
 frei0r-rs2 = { git = "https://github.com/rectalogic/frei0r-rs.git", tag = "2.4.0" }
 
 [profile.release]

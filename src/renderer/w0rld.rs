@@ -90,16 +90,18 @@ impl<const S: usize> W0rld<S> {
         self.app
             .insert_resource(TimeUpdateStrategy::ManualInstant(self.time));
 
-        let video_images = self
-            .app
-            .world()
-            .resource::<plugins::VideoImages<S>>()
-            .0
-            .clone();
-        let mut images = self.app.world_mut().resource_mut::<Assets<Image>>();
-        for (image_handle, inframe) in video_images.iter().zip(inframes) {
-            if let Some(mut image) = images.get_mut(image_handle) {
-                image.data.as_mut().unwrap().copy_from_slice(inframe);
+        if S > 0 {
+            let video_images = self
+                .app
+                .world()
+                .resource::<plugins::VideoImages<S>>()
+                .0
+                .clone();
+            let mut images = self.app.world_mut().resource_mut::<Assets<Image>>();
+            for (image_handle, inframe) in video_images.iter().zip(inframes) {
+                if let Some(mut image) = images.get_mut(image_handle) {
+                    image.data.as_mut().unwrap().copy_from_slice(inframe);
+                }
             }
         }
 

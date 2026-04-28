@@ -5,6 +5,7 @@ use std::sync::{OnceLock, mpsc::Sender};
 
 use super::offscreen::OffscreenPlugin;
 use bevy::{
+    asset::UnapprovedPathMode,
     ecs::error::{ErrorContext, FallbackErrorHandler},
     prelude::*,
     render::RenderPlugin,
@@ -23,6 +24,10 @@ impl Plugin for AppPlugin {
         let _ = ERROR_TX.set(self.tx.clone());
         app.add_plugins((
             DefaultPlugins
+                .set(AssetPlugin {
+                    unapproved_path_mode: UnapprovedPathMode::Allow,
+                    ..default()
+                })
                 .set(WindowPlugin {
                     primary_window: None,
                     exit_condition: ExitCondition::DontExit,

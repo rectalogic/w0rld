@@ -10,7 +10,7 @@ use bevy::{prelude::*, render::render_resource::TextureFormat};
 pub use scene::{Scene, ScenePlugin};
 
 const CAMERA_NAME: &str = "Camera";
-const VIDEO_NAME_PREFIX: &str = "Video";
+const VIDEO_MATERIAL_NAME_PREFIX: &str = "Video";
 
 pub const TEXTURE_FORMAT: TextureFormat = TextureFormat::Rgba8UnormSrgb;
 const PIXEL_SIZE: usize = 4;

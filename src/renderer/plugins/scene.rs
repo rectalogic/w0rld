@@ -1,8 +1,8 @@
 // Copyright (C) 2026 Andrew Wason
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-use super::{CAMERA_NAME, VIDEO_NAME_PREFIX, VideoImages, offscreen::OffscreenSurface};
-use bevy::{prelude::*, world_serialization::WorldInstanceReady};
+use super::{CAMERA_NAME, VIDEO_MATERIAL_NAME_PREFIX, VideoImages, offscreen::OffscreenSurface};
+use bevy::{gltf::GltfMaterialName, prelude::*, world_serialization::WorldInstanceReady};
 
 pub struct ScenePlugin<const S: usize> {
     pub scene_path: String,
@@ -54,7 +54,7 @@ fn configure_scene<const S: usize>(
     mut commands: Commands,
     mut scene: ResMut<Scene>,
     cameras: Query<(Entity, &Name), With<Camera>>,
-    video_materials: Query<(&Name, &MeshMaterial3d<StandardMaterial>)>,
+    video_materials: Query<(&GltfMaterialName, &MeshMaterial3d<StandardMaterial>)>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     video_images: Res<VideoImages<S>>,
 ) -> Result<()> {
@@ -71,15 +71,18 @@ fn configure_scene<const S: usize>(
     }
 
     (0..S).for_each(|i| {
-        let name = Name::new(format!("{VIDEO_NAME_PREFIX}{}", i + 1));
-        if let Some(video_material) = video_materials
-            .iter()
-            .find_map(|(n, m)| if *n == name { Some(m) } else { None })
-            && let Some(mut material) = materials.get_mut(&video_material.0)
+        let material_name = format!("{VIDEO_MATERIAL_NAME_PREFIX}{}", i + 1);
+        if let Some(video_material) = video_materials.iter().find_map(|(name, mesh_material)| {
+            if name.0 == material_name {
+                Some(mesh_material)
+            } else {
+                None
+            }
+        }) && let Some(mut material) = materials.get_mut(&video_material.0)
         {
             material.base_color_texture = Some(video_images.0[i].clone())
         } else {
-            warn!("Missing video node {}", name.as_str());
+            warn!("w0rld: Video node {material_name} not found");
         }
     });
 

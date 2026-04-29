@@ -19,8 +19,15 @@ impl<const S: usize> Plugin for ScenePlugin<S> {
             ready: false,
         })
         .add_systems(Startup, load_scene)
-        .add_observer(configure_scene::<S>);
+        .add_observer(configure_scene::<S>)
+        .add_observer(play_animations);
     }
+}
+
+#[derive(Component)]
+struct AnimationToPlay {
+    graph_handle: Handle<AnimationGraph>,
+    index: AnimationNodeIndex,
 }
 
 #[derive(Resource)]
@@ -41,11 +48,27 @@ fn load_scene(
     mut commands: Commands,
     scene: Res<Scene>,
     asset_server: Res<AssetServer>,
+    mut graphs: ResMut<Assets<AnimationGraph>>,
 ) -> Result<()> {
+    // Export from Blender with "Active Actions merged"
+    let (graph, index) = AnimationGraph::from_clip(
+        asset_server
+            .load_builder()
+            .load(GltfAssetLabel::Animation(0).from_asset(scene.path.clone())),
+    );
+    let graph_handle = graphs.add(graph);
+
     let gltf_handle: Handle<WorldAsset> = asset_server
         .load_builder()
         .load(GltfAssetLabel::Scene(0).from_asset(scene.path.clone()));
-    commands.spawn(WorldAssetRoot(gltf_handle));
+
+    commands.spawn((
+        WorldAssetRoot(gltf_handle),
+        AnimationToPlay {
+            graph_handle,
+            index,
+        },
+    ));
     Ok(())
 }
 
@@ -88,4 +111,24 @@ fn configure_scene<const S: usize>(
 
     scene.ready = true;
     Ok(())
+}
+
+fn play_animations(
+    scene_ready: On<WorldInstanceReady>,
+    mut commands: Commands,
+    children: Query<&Children>,
+    animations_to_play: Query<&AnimationToPlay>,
+    mut players: Query<&mut AnimationPlayer>,
+) {
+    if let Ok(animation_to_play) = animations_to_play.get(scene_ready.entity) {
+        for child in children.iter_descendants(scene_ready.entity) {
+            if let Ok(mut player) = players.get_mut(child) {
+                player.play(animation_to_play.index);
+
+                commands
+                    .entity(child)
+                    .insert(AnimationGraphHandle(animation_to_play.graph_handle.clone()));
+            }
+        }
+    }
 }

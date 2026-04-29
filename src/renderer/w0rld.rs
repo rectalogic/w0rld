@@ -93,7 +93,7 @@ impl<const S: usize> W0rld<S> {
         } else {
             0.0
         };
-        self.time += Duration::from_secs(dt as u64);
+        self.time += Duration::from_secs_f64(dt);
         self.app
             .insert_resource(TimeUpdateStrategy::ManualInstant(self.time));
 

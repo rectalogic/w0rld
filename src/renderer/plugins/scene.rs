@@ -1,6 +1,8 @@
 // Copyright (C) 2026 Andrew Wason
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+use std::ops::DerefMut;
+
 use super::{CAMERA_NAME, VIDEO_MATERIAL_NAME_PREFIX, VideoImages, offscreen::OffscreenSurface};
 use bevy::{gltf::GltfMaterialName, prelude::*, world_serialization::WorldInstanceReady};
 
@@ -19,6 +21,7 @@ impl<const S: usize> Plugin for ScenePlugin<S> {
             ready: false,
         })
         .add_systems(Startup, load_scene)
+        .add_systems(Update, mark_video_images_modified::<S>)
         .add_observer(configure_scene::<S>)
         .add_observer(play_animations);
     }
@@ -131,4 +134,16 @@ fn play_animations(
             }
         }
     }
+}
+
+// We modify images untracked in main loop, this marks the assets as modified
+fn mark_video_images_modified<const S: usize>(
+    video_images: Res<VideoImages<S>>,
+    mut images: ResMut<Assets<Image>>,
+) {
+    (0..S).for_each(|i| {
+        if let Some(mut image) = images.get_mut(&video_images.0[i]) {
+            image.deref_mut();
+        }
+    });
 }

@@ -106,8 +106,12 @@ impl<const S: usize> W0rld<S> {
                 .clone();
             let mut images = self.app.world_mut().resource_mut::<Assets<Image>>();
             for (image_handle, inframe) in video_images.iter().zip(inframes) {
-                if let Some(mut image) = images.get_mut(image_handle) {
-                    image.data.as_mut().unwrap().copy_from_slice(inframe);
+                // Bypass asset change tracking since we are outside the Main schedule.
+                // We mark the image modified in mark_video_images_modified
+                if let Some(image) = images.get_mut_untracked(image_handle)
+                    && let Some(ref mut data) = image.data
+                {
+                    data.copy_from_slice(inframe);
                 }
             }
         }

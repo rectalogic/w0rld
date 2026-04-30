@@ -19,17 +19,21 @@ where
     J: Send + 'static,
     R: Send + 'static,
 {
-    pub fn new<F>(processor: F) -> Self
+    pub fn new<F>(processor: F) -> Result<Self>
     where
         F: Send + 'static + FnOnce(Receiver<J>, Sender<R>) -> Result<()>,
     {
         let (txj, rxj) = channel();
         let (txr, rxr) = channel();
-        Self {
+        Ok(Self {
             rx: rxr,
             tx: txj,
-            thread: Some(thread::spawn(move || processor(rxj, txr))),
-        }
+            thread: Some(
+                thread::Builder::new()
+                    .name("Bevy Main".into())
+                    .spawn(move || processor(rxj, txr))?,
+            ),
+        })
     }
 
     pub fn process(&mut self, job: J) -> Result<R> {
@@ -74,7 +78,8 @@ mod tests {
                 tx.send(Response(job.0 as f32))?;
             }
             Ok(())
-        });
+        })
+        .unwrap();
 
         assert_eq!(processor.process(Job(7)).unwrap(), Response(7.0));
     }

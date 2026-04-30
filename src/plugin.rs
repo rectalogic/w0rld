@@ -45,12 +45,17 @@ where
                     && let Ok(gltf_path) = std::path::absolute(gltf_path)
                     && let Some(gltf_path) = gltf_path.to_str()
                 {
-                    self.processor = Some(Ok(RenderProcessor::<S>::new(
-                        gltf_path.into(),
-                        self.width,
-                        self.height,
-                    )));
-                    self.processor.as_mut().unwrap().as_mut().unwrap()
+                    match RenderProcessor::<S>::new(gltf_path.into(), self.width, self.height) {
+                        Ok(processor) => {
+                            self.processor = Some(Ok(processor));
+                            self.processor.as_mut().unwrap().as_mut().unwrap()
+                        }
+                        Err(e) => {
+                            log::error!("w0rld: failed to create processor `{e:?}'");
+                            self.processor = Some(Err(()));
+                            return;
+                        }
+                    }
                 } else {
                     log::error!("w0rld: invalid gltf_path `{:?}'", self.gltf_path);
                     self.processor = Some(Err(()));

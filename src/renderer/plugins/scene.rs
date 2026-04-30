@@ -140,6 +140,7 @@ fn play_animations(
 fn mark_video_images_modified<const S: usize>(
     video_images: Res<VideoImages<S>>,
     mut images: ResMut<Assets<Image>>,
+    _query: Single<&OffscreenSurface>, // We only need to run once the surface is installed
 ) {
     (0..S).for_each(|i| {
         if let Some(mut image) = images.get_mut(&video_images.0[i]) {

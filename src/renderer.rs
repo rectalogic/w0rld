@@ -39,7 +39,7 @@ pub struct RenderProcessor<const S: usize> {
 }
 
 impl<const S: usize> RenderProcessor<S> {
-    pub fn new(gltf_path: String, width: u32, height: u32) -> Self {
+    pub fn new(gltf_path: String, width: u32, height: u32) -> Result<Self> {
         let processor = Processor::new(
             move |rx: Receiver<RenderJob<S>>, tx: Sender<RenderResult>| {
                 let mut renderer = w0rld::W0rld::new(gltf_path, width, height)?;
@@ -58,8 +58,8 @@ impl<const S: usize> RenderProcessor<S> {
                 }
                 Ok(())
             },
-        );
-        Self { processor }
+        )?;
+        Ok(Self { processor })
     }
 
     pub fn render(&mut self, time: f64, inframes: [&[u32]; S], output: &mut [u32]) -> Result<()> {

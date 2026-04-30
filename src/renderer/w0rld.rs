@@ -72,12 +72,11 @@ impl<const S: usize> W0rld<S> {
         // Preroll frames while we wait for asset to load, also to let render pipelines load etc.
         // https://github.com/bevyengine/bevy/issues/20756
         while !app.world().resource::<plugins::Scene>().ready() {
-            app.update();
-            if let Ok(result) = rx.try_recv() {
-                result?;
-            }
+            Self::preroll(&mut app, &rx)?;
             bevy::platform::thread::sleep(Duration::from_millis(40));
         }
+        // Self::preroll(&mut app, &rx)?;
+        // Self::preroll(&mut app, &rx)?;
 
         Ok(Self {
             app,
@@ -85,6 +84,14 @@ impl<const S: usize> W0rld<S> {
             time: now,
             last_time: None,
         })
+    }
+
+    fn preroll(app: &mut App, rx: &Receiver<Result<Vec<u8>>>) -> Result<()> {
+        app.update();
+        if let Ok(result) = rx.try_recv() {
+            result?;
+        }
+        Ok(())
     }
 
     pub fn render(&mut self, time: f64, inframes: [&[u8]; S]) -> Result<Vec<u8>> {

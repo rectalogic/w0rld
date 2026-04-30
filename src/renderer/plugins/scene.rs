@@ -106,7 +106,7 @@ fn configure_scene<const S: usize>(
             }
         }) && let Some(mut material) = materials.get_mut(&video_material.0)
         {
-            material.base_color_texture = Some(video_images.0[i].clone())
+            material.base_color_texture = Some(video_images.0[i].clone());
         } else {
             warn!("w0rld: Video node {material_name} not found");
         }

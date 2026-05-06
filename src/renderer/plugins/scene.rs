@@ -1,7 +1,10 @@
 // Copyright (C) 2026 Andrew Wason
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-use std::ops::DerefMut;
+use std::{
+    ops::DerefMut,
+    sync::mpsc::{Receiver, Sender},
+};
 
 use super::{CAMERA_NAME, VIDEO_MATERIAL_NAME_PREFIX, VideoImages, offscreen::OffscreenSurface};
 use bevy::{gltf::GltfMaterialName, prelude::*, world_serialization::WorldInstanceReady};
@@ -47,22 +50,57 @@ impl Scene {
     }
 }
 
+#[derive(Resource)]
+pub struct AssetTracker {
+    tx: Sender<()>,
+    guard_count: u32,
+}
+
+impl AssetTracker {
+    pub fn new(tx: Sender<()>) -> Self {
+        Self { tx, guard_count: 0 }
+    }
+
+    fn guard(&mut self) -> AssetGuard {
+        self.guard_count += 1;
+        AssetGuard(self.tx.clone())
+    }
+
+    pub fn wait(&self, rx: Receiver<()>) -> Result<()> {
+        for _ in 0..self.guard_count {
+            rx.recv()?;
+        }
+        Ok(())
+    }
+}
+
+struct AssetGuard(Sender<()>);
+
+impl Drop for AssetGuard {
+    fn drop(&mut self) {
+        let _ = self.0.send(());
+    }
+}
+
 fn load_scene(
     mut commands: Commands,
     scene: Res<Scene>,
     asset_server: Res<AssetServer>,
     mut graphs: ResMut<Assets<AnimationGraph>>,
+    mut guard_sender: ResMut<AssetTracker>,
 ) -> Result<()> {
     // Export from Blender with "Active Actions merged"
     let (graph, index) = AnimationGraph::from_clip(
         asset_server
             .load_builder()
+            .with_guard(guard_sender.guard())
             .load(GltfAssetLabel::Animation(0).from_asset(scene.path.clone())),
     );
     let graph_handle = graphs.add(graph);
 
     let gltf_handle: Handle<WorldAsset> = asset_server
         .load_builder()
+        .with_guard(guard_sender.guard())
         .load(GltfAssetLabel::Scene(0).from_asset(scene.path.clone()));
 
     commands.spawn((

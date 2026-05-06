@@ -25,11 +25,11 @@ pub struct W0rld<const S: usize> {
 
 impl<const S: usize> W0rld<S> {
     pub fn new(scene_path: String, width: u32, height: u32) -> Result<Self> {
-        let (tx, rx) = channel();
+        let (render_tx, render_rx) = channel();
         let now = Instant::now();
         let mut app = App::new();
         app.add_plugins((
-            plugins::AppPlugin { tx },
+            plugins::AppPlugin { tx: render_tx },
             plugins::ScenePlugin::<S> {
                 scene_path,
                 width,
@@ -67,12 +67,20 @@ impl<const S: usize> W0rld<S> {
             .try_into()
             .unwrap();
 
-        app.insert_resource(plugins::VideoImages::<S>(video_images));
+        let (asset_tx, asset_rx) = channel();
+        app.insert_resource(plugins::VideoImages::<S>(video_images))
+            .insert_resource(plugins::AssetTracker::new(asset_tx));
+
+        Self::preroll(&mut app, &render_rx)?;
+
+        if let Some(asset_tracker) = app.world_mut().remove_resource::<plugins::AssetTracker>() {
+            asset_tracker.wait(asset_rx)?;
+        }
 
         // Preroll frames while we wait for asset to load, also to let render pipelines load etc.
         // https://github.com/bevyengine/bevy/issues/20756
         while !app.world().resource::<plugins::Scene>().ready() {
-            Self::preroll(&mut app, &rx)?;
+            Self::preroll(&mut app, &render_rx)?;
             bevy::platform::thread::sleep(Duration::from_millis(40));
         }
         // Self::preroll(&mut app, &rx)?;
@@ -80,7 +88,7 @@ impl<const S: usize> W0rld<S> {
 
         Ok(Self {
             app,
-            rx,
+            rx: render_rx,
             time: now,
             last_time: None,
         })

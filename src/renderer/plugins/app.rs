@@ -3,12 +3,12 @@
 
 use std::sync::{OnceLock, mpsc::Sender};
 
-use super::offscreen::OffscreenPlugin;
+use super::{RenderSender, offscreen::OffscreenPlugin};
 use bevy::{
     asset::UnapprovedPathMode,
     ecs::error::{ErrorContext, FallbackErrorHandler},
     prelude::*,
-    render::RenderPlugin,
+    render::{RenderPlugin, pipelined_rendering::PipelinedRenderingPlugin},
     window::ExitCondition,
     winit::WinitPlugin,
 };
@@ -38,11 +38,11 @@ impl Plugin for AppPlugin {
                     ..default()
                 })
                 .build()
-                .disable::<WinitPlugin>(),
-            OffscreenPlugin {
-                tx: self.tx.clone(),
-            },
+                .disable::<WinitPlugin>()
+                .disable::<PipelinedRenderingPlugin>(),
+            OffscreenPlugin,
         ))
+        .insert_resource(RenderSender(self.tx.clone()))
         .insert_resource(FallbackErrorHandler(error_handler));
     }
 }

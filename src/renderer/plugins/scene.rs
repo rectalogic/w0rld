@@ -6,8 +6,15 @@ use std::{
     sync::mpsc::{Receiver, Sender},
 };
 
-use super::{CAMERA_NAME, VIDEO_MATERIAL_NAME_PREFIX, VideoImages, offscreen::OffscreenSurface};
-use bevy::{gltf::GltfMaterialName, prelude::*, world_serialization::WorldInstanceReady};
+use super::{
+    CAMERA_NAME, RenderSender, VIDEO_MATERIAL_NAME_PREFIX, VideoImages, offscreen::OffscreenSurface,
+};
+use bevy::{
+    asset::{AssetEventSystems, AssetLoadFailedEvent},
+    gltf::GltfMaterialName,
+    prelude::*,
+    world_serialization::WorldInstanceReady,
+};
 
 pub struct ScenePlugin<const S: usize> {
     pub scene_path: String,
@@ -24,7 +31,11 @@ impl<const S: usize> Plugin for ScenePlugin<S> {
             ready: false,
         })
         .add_systems(Startup, load_scene)
-        .add_systems(Update, mark_video_images_modified::<S>)
+        .add_systems(Update, asset_load_failed_handler)
+        .add_systems(
+            PostUpdate,
+            mark_video_images_modified::<S>.before(AssetEventSystems),
+        )
         .add_observer(configure_scene::<S>)
         .add_observer(play_animations);
     }
@@ -172,6 +183,16 @@ fn play_animations(
             }
         }
     }
+}
+
+fn asset_load_failed_handler(
+    mut errors: MessageReader<AssetLoadFailedEvent<WorldAsset>>,
+    sender: Res<RenderSender>,
+) -> Result<()> {
+    if let Some(error) = errors.read().next() {
+        sender.0.send(Err(error.error.clone().into()))?;
+    }
+    Ok(())
 }
 
 // We modify images untracked in main loop, this marks the assets as modified

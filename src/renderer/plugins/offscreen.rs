@@ -1,16 +1,14 @@
 // Copyright (C) 2026 Andrew Wason
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-use std::sync::mpsc::Sender;
-
-use super::{PIXEL_SIZE, TEXTURE_FORMAT};
+use super::{PIXEL_SIZE, RenderSender, TEXTURE_FORMAT};
 use bevy::{
     camera::RenderTarget,
     prelude::*,
     render::{
         Render, RenderApp, RenderSystems,
         extract_component::{ExtractComponent, ExtractComponentPlugin},
-        extract_resource::{ExtractResource, ExtractResourcePlugin},
+        extract_resource::ExtractResourcePlugin,
         render_asset::RenderAssets,
         render_resource::{
             Buffer, BufferDescriptor, BufferUsages, CommandEncoderDescriptor, Extent3d, MapMode,
@@ -20,9 +18,7 @@ use bevy::{
     },
 };
 
-pub struct OffscreenPlugin {
-    pub tx: Sender<Result<Vec<u8>>>,
-}
+pub struct OffscreenPlugin;
 
 impl Plugin for OffscreenPlugin {
     fn build(&self, app: &mut App) {
@@ -30,7 +26,6 @@ impl Plugin for OffscreenPlugin {
             ExtractComponentPlugin::<OffscreenTexture>::default(),
             ExtractResourcePlugin::<RenderSender>::default(),
         ))
-        .insert_resource(RenderSender(self.tx.clone()))
         .add_observer(setup_offscreen_texture);
 
         app.sub_app_mut(RenderApp)
@@ -41,9 +36,6 @@ impl Plugin for OffscreenPlugin {
             );
     }
 }
-
-#[derive(Resource, Clone, ExtractResource)]
-struct RenderSender(Sender<Result<Vec<u8>>>);
 
 #[derive(Component)]
 #[require(Camera3d)]

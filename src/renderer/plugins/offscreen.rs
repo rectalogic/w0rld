@@ -16,7 +16,7 @@ use bevy::{
             Buffer, BufferDescriptor, BufferUsages, CommandEncoderDescriptor, Extent3d, MapMode,
             PollType, TexelCopyBufferInfo, TexelCopyBufferLayout, TextureUsages,
         },
-        renderer::{RenderContext, RenderDevice, RenderGraph, RenderQueue},
+        renderer::{RenderContext, RenderDevice, RenderGraph, RenderGraphSystems, RenderQueue},
     },
 };
 
@@ -34,11 +34,11 @@ impl Plugin for OffscreenPlugin {
         .add_observer(setup_offscreen_texture);
 
         app.sub_app_mut(RenderApp)
+            .add_systems(Render, readback_buffer.after(RenderSystems::Render))
             .add_systems(
-                Render,
-                copy_from_offscreen_buffer.after(RenderSystems::Render),
-            )
-            .add_systems(RenderGraph, copy_offscreen_texture_to_buffer);
+                RenderGraph,
+                copy_texture_to_buffer.after(RenderGraphSystems::Submit),
+            );
     }
 }
 
@@ -110,7 +110,7 @@ fn setup_offscreen_texture(
     ));
 }
 
-fn copy_offscreen_texture_to_buffer(
+fn copy_texture_to_buffer(
     render_context: RenderContext,
     offscreen_texture: Single<&OffscreenTexture>,
     render_queue: Res<RenderQueue>,
@@ -148,7 +148,7 @@ fn copy_offscreen_texture_to_buffer(
     Ok(())
 }
 
-fn copy_from_offscreen_buffer(
+fn readback_buffer(
     offscreen_texture: Single<&OffscreenTexture>,
     render_sender: Res<RenderSender>,
     render_device: Res<RenderDevice>,

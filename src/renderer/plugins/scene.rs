@@ -160,6 +160,10 @@ fn configure_scene<const S: usize>(
                 None
             }
         }) {
+            // In Blender, use a Cube empty with radius 0.5
+            // In Bevy, this would project a 16:9 image on the floor for a camera with Y up:
+            // Transform::from_rotation(Quat::from_rotation_y(std::f32::consts::PI))
+            //     .with_scale(Vec3::new(2.0, 2.0 * (9.0 / 16.0), 1.0)),
             commands.entity(video_entity).insert((
                 ForwardDecal,
                 MeshMaterial3d(decal_standard_materials.add(ForwardDecalMaterial {

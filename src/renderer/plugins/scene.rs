@@ -7,11 +7,12 @@ use std::{
 };
 
 use super::{
-    CAMERA_NAME, RenderSender, VIDEO_MATERIAL_NAME_PREFIX, VideoImages, offscreen::OffscreenSurface,
+    CAMERA_NAME, RenderSender, VIDEO_NAME_PREFIX, VideoImages, offscreen::OffscreenSurface,
 };
 use bevy::{
     asset::{AssetEventSystems, AssetLoadFailedEvent},
-    gltf::GltfMaterialName,
+    core_pipeline::prepass::DepthPrepass,
+    pbr::decal::{ForwardDecal, ForwardDecalMaterial, ForwardDecalMaterialExt},
     prelude::*,
     world_serialization::WorldInstanceReady,
 };
@@ -100,7 +101,7 @@ fn load_scene(
     mut graphs: ResMut<Assets<AnimationGraph>>,
     mut guard_sender: ResMut<AssetTracker>,
 ) -> Result<()> {
-    // Export from Blender with "Active Actions merged"
+    // Export glb from Blender with "Animation Mode: Active actions merged"
     let (graph, index) = AnimationGraph::from_clip(
         asset_server
             .load_builder()
@@ -129,8 +130,11 @@ fn configure_scene<const S: usize>(
     mut commands: Commands,
     mut scene: ResMut<Scene>,
     cameras: Query<(Entity, &Name), With<Camera>>,
-    video_materials: Query<(&GltfMaterialName, &MeshMaterial3d<StandardMaterial>)>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    #[allow(clippy::type_complexity)] video_projectors: Query<
+        (Entity, &Name),
+        (Without<Camera>, Without<Mesh3d>),
+    >,
+    mut decal_standard_materials: ResMut<Assets<ForwardDecalMaterial<StandardMaterial>>>,
     video_images: Res<VideoImages<S>>,
 ) -> Result<()> {
     let name = Name::new(CAMERA_NAME);
@@ -138,26 +142,38 @@ fn configure_scene<const S: usize>(
         .iter()
         .find_map(|(e, n)| if *n == name { Some(e) } else { None })
     {
-        commands
-            .entity(camera_entity)
-            .insert(OffscreenSurface::new(scene.width, scene.height));
+        commands.entity(camera_entity).insert((
+            // Required for ForwardDecal
+            DepthPrepass,
+            OffscreenSurface::new(scene.width, scene.height),
+        ));
     } else {
         return Err("Camera node not found".into());
     }
 
     (0..S).for_each(|i| {
-        let material_name = format!("{VIDEO_MATERIAL_NAME_PREFIX}{}", i + 1);
-        if let Some(video_material) = video_materials.iter().find_map(|(name, mesh_material)| {
-            if name.0 == material_name {
-                Some(mesh_material)
+        let video_name = Name::new(format!("{VIDEO_NAME_PREFIX}{}", i + 1));
+        if let Some(video_entity) = video_projectors.iter().find_map(|(entity, name)| {
+            if *name == video_name {
+                Some(entity)
             } else {
                 None
             }
-        }) && let Some(mut material) = materials.get_mut(&video_material.0)
-        {
-            material.base_color_texture = Some(video_images.0[i].clone());
+        }) {
+            commands.entity(video_entity).insert((
+                ForwardDecal,
+                MeshMaterial3d(decal_standard_materials.add(ForwardDecalMaterial {
+                    base: StandardMaterial {
+                        base_color_texture: Some(video_images.0[i].clone()),
+                        ..default()
+                    },
+                    extension: ForwardDecalMaterialExt {
+                        depth_fade_factor: 1.0,
+                    },
+                })),
+            ));
         } else {
-            warn!("w0rld: Video node {material_name} not found");
+            warn!("w0rld: Video node {video_name} not found");
         }
     });
 

@@ -15,7 +15,7 @@ use bevy::{
 pub use scene::{AssetTracker, Scene, ScenePlugin};
 
 const CAMERA_NAME: &str = "Camera";
-const VIDEO_MATERIAL_NAME_PREFIX: &str = "Video";
+const VIDEO_NAME_PREFIX: &str = "Video";
 
 pub const TEXTURE_FORMAT: TextureFormat = TextureFormat::Rgba8UnormSrgb;
 const PIXEL_SIZE: usize = 4;

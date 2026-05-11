@@ -3,17 +3,12 @@
 
 use std::ffi::CStr;
 
-use super::{W0rldPlugin, PluginInfo};
+use super::{PluginInfo, W0rldPlugin};
 
-pub type SourcePlugin = W0rldPlugin<frei0r_rs2::KindSource, 0>;
+pub type SourcePlugin = W0rldPlugin<SourceInfo, 0>;
 
-impl PluginInfo for frei0r_rs2::KindSource {
+pub struct SourceInfo;
+impl PluginInfo for SourceInfo {
     const NAME: &'static CStr = c"3D mixer3";
     const EXPLANATION: &'static CStr = c"Renders 3D scenes with 3 input videos";
-}
-
-impl frei0r_rs2::SourcePlugin for SourcePlugin {
-    fn update_source(&mut self, time: f64, outframe: &mut [u32]) {
-        self.update(time, [], outframe);
-    }
 }

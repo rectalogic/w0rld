@@ -2465,8 +2465,8 @@ checksum = "aa9a19cbb55df58761df49b23516a86d432839add4af60fc256da840f66ed35b"
 
 [[package]]
 name = "frei0r-rs2"
-version = "2.4.0"
-source = "git+https://github.com/rectalogic/frei0r-rs.git?tag=2.4.0#bb466e203d9164d5b546741df437da7424a1f086"
+version = "3.0.0"
+source = "git+https://github.com/rectalogic/frei0r-rs.git?tag=3.0.0#8c59a2c4c6d18d4674cbad69130d45784c1045d0"
 dependencies = [
  "frei0r-sys2",
  "paste",
@@ -2474,8 +2474,8 @@ dependencies = [
 
 [[package]]
 name = "frei0r-sys2"
-version = "2.4.0"
-source = "git+https://github.com/rectalogic/frei0r-rs.git?tag=2.4.0#bb466e203d9164d5b546741df437da7424a1f086"
+version = "3.0.0"
+source = "git+https://github.com/rectalogic/frei0r-rs.git?tag=3.0.0#8c59a2c4c6d18d4674cbad69130d45784c1045d0"
 
 [[package]]
 name = "futures-channel"

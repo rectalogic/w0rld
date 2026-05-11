@@ -3,23 +3,12 @@
 
 use std::ffi::CStr;
 
-use super::{W0rldPlugin, PluginInfo};
+use super::{PluginInfo, W0rldPlugin};
 
-pub type Mixer2Plugin = W0rldPlugin<frei0r_rs2::KindMixer2, 2>;
+pub type Mixer2Plugin = W0rldPlugin<Mixer2Info, 2>;
 
-impl PluginInfo for frei0r_rs2::KindMixer2 {
+pub struct Mixer2Info;
+impl PluginInfo for Mixer2Info {
     const NAME: &'static CStr = c"3D mixer2";
     const EXPLANATION: &'static CStr = c"Renders 3D scenes with 2 input videos";
-}
-
-impl frei0r_rs2::Mixer2Plugin for Mixer2Plugin {
-    fn update_mixer2(
-        &mut self,
-        time: f64,
-        inframe1: &[u32],
-        inframe2: &[u32],
-        outframe: &mut [u32],
-    ) {
-        self.update(time, [inframe1, inframe2], outframe);
-    }
 }

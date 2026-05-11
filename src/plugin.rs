@@ -14,17 +14,17 @@ pub mod mixer2;
 pub mod mixer3;
 pub mod source;
 
-pub struct W0rldPlugin<K: frei0r_rs2::PluginKind, const S: usize> {
+pub struct W0rldPlugin<PI: PluginInfo, const S: usize> {
     gltf_path: CString,
     width: u32,
     height: u32,
     processor: Option<Result<RenderProcessor<S>, ()>>,
-    _phantom: PhantomData<K>,
+    _phantom: PhantomData<PI>,
 }
 
-impl<K, const S: usize> W0rldPlugin<K, S>
+impl<PI, const S: usize> W0rldPlugin<PI, S>
 where
-    K: frei0r_rs2::PluginKind,
+    PI: PluginInfo,
 {
     fn new(width: u32, height: u32) -> Self {
         Self {
@@ -71,17 +71,15 @@ where
     }
 }
 
-trait PluginInfo {
+pub trait PluginInfo {
     const NAME: &'static CStr;
     const EXPLANATION: &'static CStr;
 }
 
-impl<K, const S: usize> frei0r_rs2::Plugin for W0rldPlugin<K, S>
+impl<PI, const S: usize> frei0r_rs2::Plugin<S> for W0rldPlugin<PI, S>
 where
-    K: frei0r_rs2::PluginKind + PluginInfo + Send + 'static,
+    PI: PluginInfo + Send + 'static,
 {
-    type Kind = K;
-
     const PARAMS: &'static [frei0r_rs2::ParamInfo<Self>] = &[frei0r_rs2::ParamInfo::new_string(
         c"gltf_path",
         c"Path to GLTF/GLB scene file",
@@ -91,16 +89,20 @@ where
 
     fn info() -> frei0r_rs2::PluginInfo {
         frei0r_rs2::PluginInfo {
-            name: K::NAME,
+            name: PI::NAME,
             author: c"Andrew Wason",
             color_model: frei0r_rs2::ColorModel::RGBA8888,
             major_version: env!("CARGO_PKG_VERSION_MAJOR").parse().unwrap(),
             minor_version: env!("CARGO_PKG_VERSION_MINOR").parse().unwrap(),
-            explanation: Some(K::EXPLANATION),
+            explanation: Some(PI::EXPLANATION),
         }
     }
 
     fn new(width: usize, height: usize) -> Self {
-        W0rldPlugin::new(width as u32, height as u32)
+        Self::new(width as u32, height as u32)
+    }
+
+    fn update(&mut self, time: f64, inframes: [&[u32]; S], outframe: &mut [u32]) {
+        self.update(time, inframes, outframe)
     }
 }

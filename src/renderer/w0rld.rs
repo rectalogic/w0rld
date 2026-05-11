@@ -83,8 +83,8 @@ impl<const S: usize> W0rld<S> {
             Self::preroll(&mut app, &render_rx)?;
             bevy::platform::thread::sleep(Duration::from_millis(40));
         }
-        // Self::preroll(&mut app, &rx)?;
-        // Self::preroll(&mut app, &rx)?;
+        Self::preroll(&mut app, &render_rx)?;
+        // Self::preroll(&mut app, &render_rx)?;
 
         Ok(Self {
             app,
@@ -133,5 +133,57 @@ impl<const S: usize> W0rld<S> {
 
         self.app.update();
         self.rx.recv()?
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    const W: u32 = 640;
+    const H: u32 = 360;
+
+    fn fill_frame(frame: &mut [u8], pixel: [u8; 4]) {
+        frame
+            .chunks_exact_mut(4)
+            .for_each(|chunk| chunk.copy_from_slice(&pixel));
+    }
+
+    fn save_image(path: &str, data: Vec<u8>) {
+        let image = Image::new(
+            Extent3d {
+                width: W,
+                height: H,
+                ..default()
+            },
+            TextureDimension::D2,
+            data,
+            plugins::TEXTURE_FORMAT,
+            RenderAssetUsages::MAIN_WORLD,
+        );
+        let image = image.try_into_dynamic().unwrap();
+        image.save(path).unwrap();
+    }
+
+    #[test]
+    #[ignore]
+    fn test_render() {
+        let mut w = W0rld::<1>::new(
+            "/Users/aw/Projects/rectalogic/experiments/rust/bevworld/assets/cube_diorama.glb"
+                .into(),
+            W,
+            H,
+        )
+        .unwrap();
+        let mut frame = [0u8; (W * H * 4) as usize];
+
+        info!("render 1");
+        fill_frame(&mut frame, [255, 0, 0, 255]);
+        save_image("/tmp/r1.png", w.render(1.0, [&frame]).unwrap());
+        info!("render 2");
+        fill_frame(&mut frame, [0, 255, 0, 255]);
+        save_image("/tmp/r2.png", w.render(4.0, [&frame]).unwrap());
+        info!("render 3");
+        fill_frame(&mut frame, [0, 0, 255, 255]);
+        save_image("/tmp/r3.png", w.render(7.0, [&frame]).unwrap());
     }
 }

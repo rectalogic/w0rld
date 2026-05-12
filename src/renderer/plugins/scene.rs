@@ -125,15 +125,15 @@ fn load_scene(
     Ok(())
 }
 
+type VideoProjectorQuery<'w, 's> =
+    Query<'w, 's, (Entity, &'static Name), (Without<Camera>, Without<Mesh3d>)>;
+
 fn configure_scene<const S: usize>(
     _scene_ready: On<WorldInstanceReady>,
     mut commands: Commands,
     mut scene: ResMut<Scene>,
     cameras: Query<(Entity, &Name), With<Camera>>,
-    #[allow(clippy::type_complexity)] video_projectors: Query<
-        (Entity, &Name),
-        (Without<Camera>, Without<Mesh3d>),
-    >,
+    video_projectors: VideoProjectorQuery,
     mut decal_standard_materials: ResMut<Assets<ForwardDecalMaterial<StandardMaterial>>>,
     video_images: Res<VideoImages<S>>,
 ) -> Result<()> {

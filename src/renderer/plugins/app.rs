@@ -1,7 +1,10 @@
 // Copyright (C) 2026 Andrew Wason
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-use std::sync::{OnceLock, mpsc::Sender};
+use std::{
+    sync::{OnceLock, mpsc::Sender},
+    time::Duration,
+};
 
 use super::{RenderSender, offscreen::OffscreenPlugin};
 use bevy::{
@@ -43,7 +46,8 @@ impl Plugin for AppPlugin {
             OffscreenPlugin,
         ))
         .insert_resource(RenderSender(self.tx.clone()))
-        .insert_resource(FallbackErrorHandler(error_handler));
+        .insert_resource(FallbackErrorHandler(error_handler))
+        .add_systems(Startup, setup);
     }
 }
 
@@ -51,4 +55,9 @@ fn error_handler(err: BevyError, _ctx: ErrorContext) {
     if let Some(tx) = ERROR_TX.get() {
         let _ = tx.send(Err(err));
     }
+}
+
+fn setup(mut time: ResMut<Time<Virtual>>) {
+    // Disable capping delta between updates
+    time.set_max_delta(Duration::MAX);
 }

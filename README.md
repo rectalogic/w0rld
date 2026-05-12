@@ -25,4 +25,4 @@ https://github.com/user-attachments/assets/ca5d6169-3259-439b-a5dd-7bb04b7f95d9
 FREI0R_PATH=target/debug ffmpeg -t 3s -i https://assets.mixkit.co/videos/1479/1479-720.mp4 -vf frei0r=w0rld_filter:demo/room.glb -pix_fmt yuv420p -y output-ffmpeg.mp4
 ```
 
-https://github.com/user-attachments/assets/f23f3d98-2e86-45a5-9eb4-3db5fc80ce8f
+https://github.com/user-attachments/assets/cf955cd6-5827-4216-a26e-34667ea0133f

@@ -138,6 +138,8 @@ impl<const S: usize> W0rld<S> {
 
 #[cfg(test)]
 mod tests {
+    use std::path::PathBuf;
+
     use super::*;
     const W: u32 = 640;
     const H: u32 = 360;
@@ -167,23 +169,30 @@ mod tests {
     #[test]
     #[ignore]
     fn test_render() {
-        let mut w = W0rld::<1>::new(
-            "/Users/aw/Projects/rectalogic/experiments/rust/bevworld/assets/cube_diorama.glb"
+        let mut w = W0rld::<2>::new(
+            PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("demo/room.glb")
+                .to_str()
+                .unwrap()
                 .into(),
             W,
             H,
         )
         .unwrap();
-        let mut frame = [0u8; (W * H * 4) as usize];
+        let mut frame1 = vec![0u8; (W * H * 4) as usize];
+        let mut frame2 = frame1.clone();
 
         info!("render 1");
-        fill_frame(&mut frame, [255, 0, 0, 255]);
-        save_image("/tmp/r1.png", w.render(1.0, [&frame]).unwrap());
+        fill_frame(&mut frame1, [255, 0, 0, 255]);
+        fill_frame(&mut frame2, [0, 255, 0, 255]);
+        save_image("/tmp/r1.png", w.render(0.0, [&frame1, &frame2]).unwrap());
         info!("render 2");
-        fill_frame(&mut frame, [0, 255, 0, 255]);
-        save_image("/tmp/r2.png", w.render(4.0, [&frame]).unwrap());
+        fill_frame(&mut frame1, [0, 255, 255, 255]);
+        fill_frame(&mut frame2, [255, 255, 0, 255]);
+        save_image("/tmp/r2.png", w.render(1.5, [&frame1, &frame2]).unwrap());
         info!("render 3");
-        fill_frame(&mut frame, [0, 0, 255, 255]);
-        save_image("/tmp/r3.png", w.render(7.0, [&frame]).unwrap());
+        fill_frame(&mut frame1, [64, 64, 64, 255]);
+        fill_frame(&mut frame2, [255, 0, 255, 255]);
+        save_image("/tmp/r3.png", w.render(3.0, [&frame1, &frame2]).unwrap());
     }
 }
